@@ -8,7 +8,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {Embankment} from "src/Embankment.sol";
 import {Dam} from "src/Dam.sol";
 import {PercentageMath} from "src/libraries/PercentageMath.sol";
-import {MockStETH} from "./mocks/MockStETH.sol";
+import {MockYbToken} from "src/mocks/MockYbToken.sol";
 import {Helper} from "./Helper.t.sol";
 
 contract Core is Helper {
@@ -18,14 +18,14 @@ contract Core is Helper {
 
     /* ============ State Variables ============ */
 
-    MockStETH public ybToken;
+    MockYbToken public ybToken;
     Embankment public embankment;
     Dam public dam;
 
     /* ============ setUp Function ============ */
 
     function setUp() public {
-        ybToken = new MockStETH();
+        ybToken = new MockYbToken();
         embankment = new Embankment(IERC20(address(ybToken)), "dam mETH", "damMETH");
         dam = new Dam(ybToken, embankment);
 

@@ -21,8 +21,8 @@ quote_style = "double"
 number_underscore = "preserve"
 
 [rpc_endpoints]
-mainnet = "${ALCHEMY_MAINNET_RPC_URL}"
-sepolia = "${ALCHEMY_SEPOLIA_RPC_URL}"
+mantle = "${MANTLE_RPC_URL}"
+mantle_testnet = "${MANTLE_TESTNET_RPC_URL}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
