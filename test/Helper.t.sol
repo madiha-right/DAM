@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Test, console2} from "forge-std/Test.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 contract Helper is Test {
     /* ============ Constants ============ */
@@ -11,6 +12,9 @@ contract Helper is Test {
     uint16 constant REINVESTMENT_RATIO = 500;
     uint16 constant AUTO_STREAM_RATIO = 9000;
     address constant ORACLE = address(0x1);
+
+    bytes32 constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     /* ============ Immutables ============ */
 
@@ -95,6 +99,22 @@ contract Helper is Test {
     event DistributeIncentive(address indexed receiver, uint16 proportion, uint256 amount);
 
     /* ============ Internal Functions ============ */
+
+    function _signPermit(uint256 amount, address ybToken, address dam)
+        internal
+        returns (address, uint256, uint8, bytes32, bytes32)
+    {
+        (address zeta, uint256 zetaPk) = makeAddrAndKey("zeta");
+        uint256 deadline = block.timestamp + 1 days;
+        uint256 nonce = IERC20Permit(ybToken).nonces(zeta);
+
+        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, zeta, dam, amount, nonce, deadline));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", IERC20Permit(ybToken).DOMAIN_SEPARATOR(), structHash));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(zetaPk, digest);
+
+        return (zeta, deadline, v, r, s);
+    }
 
     function _getData() internal view returns (bytes memory) {
         address[] memory recipients = new address[](4);

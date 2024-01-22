@@ -15,11 +15,18 @@ contract TestDam is Core {
 
     function testFuzz_operateDam(uint256 amount) public {
         amount = bound(amount, 1e18, type(uint128).max);
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+    }
+
+    function testFuzz_operateDamWithPermit(uint256 amount) public {
+        amount = bound(amount, 1e18, type(uint128).max);
+        _operateDamWithPermit(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
     }
 
     function test_operateDam_AlreadyOperating() public {
         uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
         vm.expectRevert(abi.encodeWithSelector(DamAlredyOperating.selector));
         dam.operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO);
@@ -36,7 +43,9 @@ contract TestDam is Core {
 
     function testFuzz_decomissionDam(uint256 amount) public {
         amount = bound(amount, 1e18, type(uint128).max);
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
         address zeta = makeAddr("zeta");
 
         vm.expectEmit(false, false, false, false);
@@ -61,7 +70,9 @@ contract TestDam is Core {
 
     function test_decomissionDam_UnauthorizedAccount() public {
         uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, alice));
         dam.decommissionDam(alice);
@@ -71,20 +82,27 @@ contract TestDam is Core {
 
     function testFuzz_endRound(uint256 amount) public {
         amount = bound(amount, 1e18, type(uint128).max);
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
         _endRound(_getData(), 1);
         _endRound(_getDataRoundTwo(), 2);
         _endRound(_getDataRoundThree(), 3);
     }
 
     function test_endRound_RoundNotEnded() public {
-        _operateDam(1000 * 1e18, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+        uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
+        _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
         vm.expectRevert(abi.encodeWithSelector(RoundNotEnded.selector));
         dam.endRound(_getData(), 0, 0, 0);
     }
 
     function test_endRound_InvalidSignature_InvalidOracle() public {
-        _operateDam(1000 * 1e18, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+        uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
+        _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
 
         (, uint256 userPk) = makeAddrAndKey("user");
         bytes memory data = _getData();
@@ -98,7 +116,9 @@ contract TestDam is Core {
     }
 
     function test_endRound_InvalidSignature_InvalidData() public {
-        _operateDam(1000 * 1e18, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+        uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
+        _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
 
         (address oracle, uint256 oraclePk) = makeAddrAndKey("oracle");
         bytes memory data = _getData();
@@ -127,6 +147,7 @@ contract TestDam is Core {
 
     function testFuzz_deposit(uint256 amount) public {
         amount = bound(amount, 1e18, type(uint128).max);
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
 
         _mintYbToken(amount, address(this));
@@ -144,6 +165,31 @@ contract TestDam is Core {
         assertEq(embankment.totalAssets(), amount * 2, "totalAssets should equal to amount * 2");
     }
 
+    function testFuzz_depositWithPermit(uint256 amount) public {
+        amount = bound(amount, 1e18, type(uint128).max);
+        IERC20(ybToken).forceApprove(address(dam), amount);
+        _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
+        uint256 fund = dam.fund();
+        (address zeta, uint256 deadline, uint8 v, bytes32 r, bytes32 s) =
+            _signPermit(amount, address(ybToken), address(dam));
+
+        dam.transferOwnership(zeta);
+        _mintYbToken(amount, zeta);
+
+        vm.startPrank(zeta);
+
+        vm.expectEmit(true, false, false, true);
+        emit Deposit(zeta, amount);
+        dam.depositWithPermit(amount, deadline, v, r, s);
+
+        vm.stopPrank();
+
+        assertEq(dam.fund(), fund + amount, "fund should equal to prev fund + amount");
+        assertEq(ybToken.balanceOf(zeta), 0, "ybToken balance of zeta should equal to 0");
+        assertEq(embankment.totalAssets(), amount * 2, "totalAssets should equal to amount * 2");
+    }
+
     function test_deposit_NotOperating() public {
         uint256 amount = 1000 * 1e18;
         _mintYbToken(amount, address(this));
@@ -153,6 +199,7 @@ contract TestDam is Core {
 
     function test_deposit_UnauthorizedAccount() public {
         uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, alice));
@@ -163,6 +210,7 @@ contract TestDam is Core {
 
     function testFuzz_scheduleWithdrawal(uint256 amount) public {
         amount = bound(amount, 1e18, type(uint128).max);
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
 
         vm.expectEmit(true, false, false, true);
@@ -189,28 +237,36 @@ contract TestDam is Core {
 
     function test_scheduleWithdrawal_InsufficientBalance() public {
         uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
         vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector));
         dam.scheduleWithdrawal(amount + 1, address(this));
     }
 
     function test_scheduleWithdrawal_InvalidAmountRequest() public {
         uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
         vm.expectRevert(abi.encodeWithSelector(InvalidAmountRequest.selector));
         dam.scheduleWithdrawal(amount, address(this));
     }
 
     function test_scheduleWithdrawal_InvalidReceiver() public {
         uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
         vm.expectRevert(abi.encodeWithSelector(InvalidReceiver.selector));
         dam.scheduleWithdrawal(amount - 1, address(0));
     }
 
     function test_scheduleWithdrawal_UnauthorizedAccount() public {
         uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, alice));
         dam.scheduleWithdrawal(amount, alice);

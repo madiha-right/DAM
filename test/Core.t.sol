@@ -42,30 +42,38 @@ contract Core is Helper {
         uint16 roundId
     ) internal {
         ybToken.mint(address(this), amount);
-        IERC20(ybToken).forceApprove(address(dam), amount);
 
         uint256 timestamp = block.timestamp;
 
         vm.expectEmit(false, false, false, false);
         emit OperateDam();
         dam.operateDam(amount, period, reinvestmentRatio, autoStreamRatio);
+        _testOperateDam(period, reinvestmentRatio, autoStreamRatio, roundId, amount, timestamp);
+    }
 
-        // _setUpstream()
-        (uint256 _period, uint16 _reinvestmentRatio, uint16 _autoStreamRatio, bool _flowing) = dam.upstream();
-        assertEq(_period, period, "period should equal to _period");
-        assertEq(_reinvestmentRatio, reinvestmentRatio, "reinvestmentRatio should equal to _reinvestmentRatio");
-        assertEq(_autoStreamRatio, autoStreamRatio, "autoStreamRatio should equal to _autoStreamRatio");
-        assertTrue(_flowing, "flowing should be true");
+    function _operateDamWithPermit(
+        uint256 amount,
+        uint256 period,
+        uint16 reinvestmentRatio,
+        uint16 autoStreamRatio,
+        uint16 roundId
+    ) internal {
+        (address zeta, uint256 deadline, uint8 v, bytes32 r, bytes32 s) =
+            _signPermit(amount, address(ybToken), address(dam));
 
-        // _deposit()
-        assertEq(ybToken.balanceOf(address(this)), 0, "balance should be 0");
-        assertEq(embankment.maxWithdraw(address(dam)), amount, "maxWithdraw should equal to amount");
+        dam.transferOwnership(zeta);
+        ybToken.mint(address(zeta), amount);
 
-        // _startRound()
-        (uint16 id, uint256 startTime, uint256 endTime) = dam.round();
-        assertEq(id, roundId, "id should equal to roundId");
-        assertEq(startTime, timestamp, "startTime should equal to timestamp");
-        assertEq(endTime, timestamp + period, "endTime should equal to timestamp + period");
+        vm.startPrank(zeta);
+
+        vm.expectEmit(false, false, false, false);
+        emit OperateDam();
+        dam.operateDamWithPermit(amount, period, reinvestmentRatio, autoStreamRatio, deadline, v, r, s);
+
+        vm.stopPrank();
+
+        _testOperateDam(period, reinvestmentRatio, autoStreamRatio, roundId, amount, deadline - 1 days);
+        assertEq(ybToken.balanceOf(zeta), 0, "balance should be 0");
     }
 
     function _endRound(bytes memory data, uint16 roundId) internal {
@@ -89,6 +97,32 @@ contract Core is Helper {
         _testDischargeYield(data, totalIncentive);
         _testProcessWithdrawal(_amount, _receiver);
         _testStartRound(roundId, startTime, endTime);
+    }
+
+    function _testOperateDam(
+        uint256 period,
+        uint16 reinvestmentRatio,
+        uint16 autoStreamRatio,
+        uint16 roundId,
+        uint256 amount,
+        uint256 timestamp
+    ) internal {
+        // _setUpstream()
+        (uint256 _period, uint16 _reinvestmentRatio, uint16 _autoStreamRatio, bool _flowing) = dam.upstream();
+        assertEq(_period, period, "period should equal to _period");
+        assertEq(_reinvestmentRatio, reinvestmentRatio, "reinvestmentRatio should equal to _reinvestmentRatio");
+        assertEq(_autoStreamRatio, autoStreamRatio, "autoStreamRatio should equal to _autoStreamRatio");
+        assertTrue(_flowing, "flowing should be true");
+
+        // _deposit()
+        assertEq(ybToken.balanceOf(address(this)), 0, "balance should be 0");
+        assertEq(embankment.maxWithdraw(address(dam)), amount, "maxWithdraw should equal to amount");
+
+        // _startRound()
+        (uint16 id, uint256 startTime, uint256 endTime) = dam.round();
+        assertEq(id, roundId, "id should equal to roundId");
+        assertEq(startTime, timestamp, "startTime should equal to timestamp");
+        assertEq(endTime, timestamp + period, "endTime should equal to timestamp + period");
     }
 
     function _testDischargeYield(bytes memory data, uint256 totalIncentive) internal {
