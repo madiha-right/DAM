@@ -228,7 +228,7 @@ contract Dam is IDam, Ownable {
      * @param autoStreamRatio The percentage of yield allocated to automatic grant distribution.
      */
     function setUpstream(uint256 period, uint16 reinvestmentRatio, uint16 autoStreamRatio) external onlyOwner {
-        _setUpsteram(period, reinvestmentRatio, autoStreamRatio);
+        _setUpstream(period, reinvestmentRatio, autoStreamRatio);
     }
 
     /**
@@ -275,7 +275,7 @@ contract Dam is IDam, Ownable {
         if (upstream.flowing) revert DamOperating();
         upstream.flowing = true;
 
-        _setUpsteram(period, reinvestmentRatio, autoStreamRatio);
+        _setUpstream(period, reinvestmentRatio, autoStreamRatio);
         _deposit(amount);
         _startRound();
 
@@ -308,7 +308,7 @@ contract Dam is IDam, Ownable {
      * @param reinvestmentRatio The percentage of yield reinvested to the treasury. Expressed in BP(basis points).
      * @param autoStreamRatio The percentage of yield allocated to automatic grant distribution. Expressed in BP(basis points).
      */
-    function _setUpsteram(uint256 period, uint16 reinvestmentRatio, uint16 autoStreamRatio) internal {
+    function _setUpstream(uint256 period, uint16 reinvestmentRatio, uint16 autoStreamRatio) internal {
         if (period == 0) revert InvalidPeriod();
         if (reinvestmentRatio > PERCENTAGE_FACTOR || autoStreamRatio > PERCENTAGE_FACTOR) {
             revert InvalidRatio();
