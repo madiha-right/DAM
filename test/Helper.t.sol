@@ -74,7 +74,7 @@ contract Helper is Test {
 
     error InvalidPeriod();
     error InvalidRatio();
-    error DamAlredyOperating();
+    error DamOperating();
     error DamNotOperating();
     error RoundNotEnded();
     error InsufficientBalance();

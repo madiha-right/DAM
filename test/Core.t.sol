@@ -84,7 +84,7 @@ contract Core is Helper {
         dam.setOracle(oracle);
 
         (uint256 _amount, address _receiver) = dam.withdrawal();
-        (, uint256 startTime, uint256 endTime) = dam.round();
+        (,, uint256 startTime, uint256 endTime) = dam.round();
 
         _mintYbToken(100 * 1e18, address(embankment)); // mock total incentive
         (uint256 totalIncentive,) = dam.getTotalIncentive();
@@ -119,7 +119,8 @@ contract Core is Helper {
         assertEq(embankment.maxWithdraw(address(dam)), amount, "maxWithdraw should equal to amount");
 
         // _startRound()
-        (uint16 id, uint256 startTime, uint256 endTime) = dam.round();
+        (uint16 id, bool ongoing, uint256 startTime, uint256 endTime) = dam.round();
+        assertTrue(ongoing, "ongoing should be true");
         assertEq(id, roundId, "id should equal to roundId");
         assertEq(startTime, timestamp, "startTime should equal to timestamp");
         assertEq(endTime, timestamp + period, "endTime should equal to timestamp + period");
@@ -156,13 +157,15 @@ contract Core is Helper {
 
     function _testStartRound(uint16 roundId, uint256 startTime, uint256 endTime) internal {
         (uint256 period,,, bool flowing) = dam.upstream();
-        (uint16 _id, uint256 _startTime, uint256 _endTime) = dam.round();
+        (uint16 _id, bool ongoing, uint256 _startTime, uint256 _endTime) = dam.round();
 
         if (flowing) {
+            assertTrue(ongoing, "ongoing should be true");
             assertEq(_id, roundId + 1, "id should equal to roundId + 1");
             assertEq(_startTime, block.timestamp, "startTime should equal to block.timestamp");
             assertEq(_endTime, block.timestamp + period, "endTime should equal to block.timestamp + period");
         } else {
+            assertFalse(ongoing, "ongoing should be false");
             assertEq(_id, roundId, "id should not increase");
             assertEq(_startTime, startTime, "startTime should not change");
             assertEq(_endTime, endTime, "endTime should not change");

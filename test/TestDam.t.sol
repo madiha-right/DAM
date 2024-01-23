@@ -24,11 +24,11 @@ contract TestDam is Core {
         _operateDamWithPermit(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
     }
 
-    function test_operateDam_AlreadyOperating() public {
+    function test_operateDam_Operating() public {
         uint256 amount = 1000 * 1e18;
         IERC20(ybToken).forceApprove(address(dam), amount);
         _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
-        vm.expectRevert(abi.encodeWithSelector(DamAlredyOperating.selector));
+        vm.expectRevert(abi.encodeWithSelector(DamOperating.selector));
         dam.operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO);
     }
 
@@ -270,6 +270,48 @@ contract TestDam is Core {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, alice));
         dam.scheduleWithdrawal(amount, alice);
+    }
+
+    /* ============ withdraw all ============ */
+    function test_withdrawAll() public {
+        uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
+        _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
+        dam.decommissionDam(address(this));
+        _endRound(_getData(), 1);
+
+        dam.withdrawAll(alice);
+    }
+
+    function test_withdrawAll_RoundNotEnded() public {
+        uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
+        _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
+        dam.decommissionDam(address(this));
+
+        vm.expectRevert(abi.encodeWithSelector(RoundNotEnded.selector));
+        dam.withdrawAll(alice);
+    }
+
+    function test_withdrawAll_DamOperating() public {
+        uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
+        _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
+        vm.expectRevert(abi.encodeWithSelector(DamOperating.selector));
+        dam.withdrawAll(alice);
+    }
+
+    function test_withdrawAll_UnauthorizedAccount() public {
+        uint256 amount = 1000 * 1e18;
+        IERC20(ybToken).forceApprove(address(dam), amount);
+        _operateDam(amount, PERIOD, REINVESTMENT_RATIO, AUTO_STREAM_RATIO, 1);
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, alice));
+        dam.withdrawAll(alice);
     }
 
     /* ============ setUpstream ============ */
