@@ -75,7 +75,7 @@ A portion of the yield can be reinvested to generate further growth, while the r
 
 1. If a `scheduleWithdrawal()` request fails due to insufficient balance or other constraints, the contract catches and handles these exceptions, ensuring system stability. The `_withdraw()` function, in particular, includes safeguards against failures, including try-catch blocks to manage unexpected errors during the withdrawal process. The failed withdrawal request simply be removed from the withdrawal queue.
 
-2. If `_scheduleWithdrawal()` on `decommisionDam()` request fails, DAO can call `withdraw()` to withdraw all funds. The `withdraw()` function exists as a safe guard to prevent fund stuck in the Embankment.
+2. If `_scheduleWithdrawal()` on `decommisionDam()` request fails, DAO can call `withdrawAll()` to withdraw all funds. The `withdrawAll()` function exists as a safe guard to prevent fund stuck in the Embankment.
 
 ## Example Scenarios
 
