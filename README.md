@@ -120,3 +120,5 @@ After several rounds, Mantle DAO decides to decomission a DAM.
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Author
+
+- [Madiha](https://twitter.com/madiha_right)
