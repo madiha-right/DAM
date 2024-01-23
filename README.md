@@ -31,7 +31,7 @@
                              ^                             |      |
                              |                             v      |
                              |                      +-------------+        +------------+
-                             |                      | Auto Steram |------->| Protocol B |
+                             |                      | Auto Stream |------->| Protocol B |
                              |                      +-------------+        +------------+
                          +--------+                        |
                          | Oracle |                        |
@@ -55,7 +55,7 @@
 
 ### Starting and Operating the DAM
 
-The DAM is operated by the DAO who deposits an initial amount of ybToken and sets the parameters for the first round. These parameters include the duration of the round, the ratio of yield reinvested to next round, and the ratio of yield distribution to projects applied for the automatic steram.
+The DAM is operated by the DAO who deposits an initial amount of ybToken and sets the parameters for the first round. These parameters include the duration of the round, the ratio of yield reinvested to next round, and the ratio of yield distribution to projects applied for the automatic stream.
 
 ### Round Lifecycle
 
@@ -88,13 +88,13 @@ Here are some example scenarios to help illustrate how DAM works. All figures, a
 
 ### 1. Yield Distribution Round
 
-1. Mantle DAO opreates a DAM by depositing 10000 _mETH_ tokens into the Dam contract with 30 days period of round, 5% reinvestment ratio and 50:50 autoStream <> communitySteram ratio.
+1. Mantle DAO opreates a DAM by depositing 10000 _mETH_ tokens into the Dam contract with 30 days period of round, 5% reinvestment ratio and 50:50 autoStream <> communityStream ratio.
 2. The deposited 10000 _mETH_ tokens are transferred to Embankment and no one can withdraw these tokens during the round, 30 days in this case.
 3. During the round, these tokens generate yield based on the 10% of APR by itself. The generated yield during this round will be approximately 83 _mETH_. (`10000 * 0.1 / 12`)
 4. After 30 days passed, the Mantle DAO ends round with verified data from an oracle.
 5. Part of generated yield, 4.15 _mETH_ (`83 * 0.05`) is reinvested to next round according to the reinvesment ratios set for the round.
-6. Rest of the generated yield, 78.85 _mETH_ will be distributed to the treasury of each projects according to the project's weight given by the oracle. Each weight is calculated based on the autoStream <> communitySteram ratio set for the round.
-7. If upstream is flowing, meaning the DAM is not decomissioned by the Mantle DAO, next round will be started immediately with increased fund, 10083 _mETH_.
+6. Rest of the generated yield, 78.85 _mETH_ will be distributed to the treasury of each projects according to the project's weight given by the oracle. Each weight is calculated based on the autoStream <> communityStream ratio set for the round.
+7. If upstream is flowing, meaning the DAM is not decomissioned by the Mantle DAO, next round will be started immediately with increased fund, 10083 _mETH_. (10000 initial deposited fund + 83 from reinvested amount of last round's yield)
 
 ### 2. Withdrawal
 
