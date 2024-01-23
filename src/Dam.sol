@@ -43,6 +43,7 @@ contract Dam is IDam, Ownable {
 
     struct Round {
         uint16 id;
+        bool ongoing;
         uint256 startTime;
         uint256 endTime;
     }
@@ -152,11 +153,12 @@ contract Dam is IDam, Ownable {
      * @param s Part of the signature (s value).
      */
     function endRound(bytes calldata data, uint8 v, bytes32 r, bytes32 s) external onlyOwnerAndOracle {
-        Round memory _round = round;
+        Round storage _round = round;
 
         if (block.timestamp < _round.endTime) revert RoundNotEnded();
         if (keccak256(data).toEthSignedMessageHash().recover(v, r, s) != oracle) revert InvalidSignature();
 
+        _round.ongoing = false;
         _dischargeYield(data);
 
         Withdrawal memory _withdrawal = withdrawal;
@@ -165,11 +167,12 @@ contract Dam is IDam, Ownable {
             _withdraw(_withdrawal.amount, _withdrawal.receiver);
             withdrawal = Withdrawal(0, address(0));
         }
+
+        emit EndRound(_round.id, data);
+
         if (upstream.flowing) {
             _startRound();
         }
-
-        emit EndRound(_round.id, data);
     }
 
     /**
@@ -191,6 +194,18 @@ contract Dam is IDam, Ownable {
     function depositWithPermit(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external onlyOwner {
         IERC20Permit(address(ybToken)).permit(_msgSender(), address(this), amount, deadline, v, r, s);
         _deposit(amount);
+    }
+
+    /**
+     * @dev Withdraws all remaining funds from embankment and transfers to the specified receiver.
+     * 			It can only be called when the DAM is not operating. (i.e. when the DAM is decommissioned, and the last round has ended)
+     * 			Use this function when scheduled withdrawal of decommissionDam has failed.
+     * @param receiver The address to receive the withdrawn ybTokens.
+     */
+    function withdrawAll(address receiver) external onlyOwner {
+        if (upstream.flowing) revert DamOperating();
+        if (block.timestamp < round.endTime || round.ongoing) revert RoundNotEnded();
+        _withdraw(type(uint256).max, receiver);
     }
 
     /**
@@ -257,7 +272,7 @@ contract Dam is IDam, Ownable {
      * @param autoStreamRatio The percentage of yield allocated to automatic grant distribution.
      */
     function _operateDam(uint256 amount, uint256 period, uint16 reinvestmentRatio, uint16 autoStreamRatio) internal {
-        if (upstream.flowing) revert DamAlredyOperating();
+        if (upstream.flowing) revert DamOperating();
         upstream.flowing = true;
 
         _setUpsteram(period, reinvestmentRatio, autoStreamRatio);
@@ -277,9 +292,10 @@ contract Dam is IDam, Ownable {
         uint256 timestamp = block.timestamp;
 
         if (!_upstream.flowing) revert DamNotOperating();
-        if (timestamp < round.endTime) revert RoundNotEnded();
+        if (timestamp < round.endTime || round.ongoing) revert RoundNotEnded();
 
         _round.id += 1;
+        _round.ongoing = true;
         _round.startTime = timestamp;
         _round.endTime = timestamp + _upstream.period;
 

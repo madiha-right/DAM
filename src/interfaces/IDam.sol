@@ -9,7 +9,7 @@ interface IDam {
 
     error InvalidPeriod();
     error InvalidRatio();
-    error DamAlredyOperating();
+    error DamOperating();
     error DamNotOperating();
     error RoundNotEnded();
     error InsufficientBalance();
@@ -160,6 +160,14 @@ interface IDam {
     function depositWithPermit(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
 
     /**
+     * @dev Withdraws all remaining funds from embankment and transfers to the specified receiver.
+     * 			It can only be called when the DAM is not operating. (i.e. when the DAM is decommissioned, and the last round has ended)
+     * 			Use this function when scheduled withdrawal of decommissionDam has failed.
+     * @param receiver The address to receive the withdrawn ybTokens.
+     */
+    function withdrawAll(address receiver) external;
+
+    /**
      * @dev Schedules a withdrawal of the specified amount to the given receiver.
      * @param amount The amount of funds to withdraw.
      * @param receiver The address to receive the withdrawn funds.
@@ -216,10 +224,11 @@ interface IDam {
     /**
      * @dev Returns the details of the current round in the DAM.
      * @return id The identifier of the current round.
+     * @return ongoing Indicates whether the current round is ongoing or not.
      * @return startTime The start time of the round.
      * @return endTime The end time of the round.
      */
-    function round() external view returns (uint16 id, uint256 startTime, uint256 endTime);
+    function round() external view returns (uint16 id, bool ongoing, uint256 startTime, uint256 endTime);
 
     /**
      * @dev Retrieves information about a scheduled withdrawal.
