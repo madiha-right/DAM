@@ -37,7 +37,7 @@ interface IDam {
      * @param startTime The start time of the round.
      * @param endTime The end time of the round.
      */
-    event StartRound(uint16 id, uint256 startTime, uint256 endTime);
+    event StartRound(uint16 indexed id, uint256 startTime, uint256 endTime);
 
     /**
      * @dev Emitted at the end of each round.

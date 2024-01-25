@@ -21,6 +21,7 @@ contract Deploy is Script {
         dam = new Dam(mockYbToken, embankment);
 
         embankment.transferOwnership(address(dam));
+        mockYbToken.mint(0xB7DAF364C11Ec537356Ce0997f750ba17236906c, 1000 * 1e18);
 
         console2.log("MockYbToken address: ", address(mockYbToken));
         console2.log("Embankment address: ", address(embankment));
