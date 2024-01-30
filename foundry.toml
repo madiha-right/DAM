@@ -23,6 +23,7 @@ number_underscore = "preserve"
 [rpc_endpoints]
 mantle = "${MANTLE_RPC_URL}"
 mantle_testnet = "${MANTLE_TESTNET_RPC_URL}"
+anvil = "${ANVIL_RPC_URL}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
