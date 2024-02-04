@@ -20,6 +20,7 @@ contract Deploy is Script {
         embankment = new Embankment(mockYbToken, 'dam mETH', 'damMETH');
         dam = new Dam(mockYbToken, embankment);
 
+        dam.setOracle(msg.sender);
         embankment.transferOwnership(address(dam));
         mockYbToken.mint(0xB7DAF364C11Ec537356Ce0997f750ba17236906c, 1000 * 1e18);
 
