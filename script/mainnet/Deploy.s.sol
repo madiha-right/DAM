@@ -13,13 +13,14 @@ contract Deploy is Script {
     function run() public {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address mETH = vm.envAddress("MANTLE_ETH_ADDRESS");
+        address sender = vm.addr(pk);
 
         vm.startBroadcast(pk);
 
         embankment = new Embankment(IERC20(mETH), 'DAM Mantle Staked Ether', 'damMETH');
         dam = new Dam(IERC20(mETH), embankment);
 
-        dam.setOracle(msg.sender);
+        dam.setOracle(sender);
         embankment.transferOwnership(address(dam));
 
         console2.log("Embankment address: ", address(embankment));
